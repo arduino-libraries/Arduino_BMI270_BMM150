@@ -1,45 +1,34 @@
 #include "Arduino.h"
 #include "Wire.h"
 #include "BoschSensorClass.h"
+#include "mbed_events.h"
+#include "mbed_shared_queues.h"
+#include "drivers/InterruptIn.h"
 
-#include "utilities/BMI270-Sensor-API/bmi270.h"
-#include "utilities/BMM150-Sensor-API/bmm150.h"
-
-#define BMI270_INT1   P0_11
-
-/* Other functions */
-void panic_led_trap(void);
-int8_t configure_sensor(struct bmi2_dev *dev);
-void bmi2_intr1_callback(void);
-void print_rslt(int8_t rslt);
-
-/* Static variables */
-static struct bmi2_dev bmi2;
-static volatile bool bmi2_intr_recvd = false;
-static volatile uint32_t last_time_us = 0;
-
-static struct bmm150_dev bmm1;
-
-struct dev_info {
-  TwoWire* _wire;
-  uint8_t dev_addr;
-};
-
-struct dev_info accel_gyro_dev_info;
-struct dev_info mag_dev_info;
+static mbed::InterruptIn irq(BoschSensorClass::BMI270_INT1, PullDown);
+static events::EventQueue queue(10 * EVENTS_EVENT_SIZE);
+static rtos::Thread event_t(osPriorityHigh, 768, nullptr, "events");
 
 BoschSensorClass::BoschSensorClass(TwoWire& wire)
 {
   _wire = &wire;
 }
 
+void BoschSensorClass::debug(Stream& stream)
+{
+  _debug = &stream;
+}
+
+void BoschSensorClass::onInterrupt(mbed::Callback<void(void)> cb)
+{
+  _cb = cb;
+  event_t.start(callback(&queue, &events::EventQueue::dispatch_forever));
+  irq.rise(queue.event(mbed::callback(this, &BoschSensorClass::interrupt_handler)));
+}
+
 int BoschSensorClass::begin() {
 
   _wire->begin();
-  Serial.begin(115200);
-  while (!Serial);
-
-  pinMode(LED_BUILTIN, OUTPUT);
 
   bmi2.chip_id = BMI2_I2C_PRIM_ADDR;
   bmi2.read = bmi2_i2c_read;
@@ -64,49 +53,108 @@ int BoschSensorClass::begin() {
   mag_dev_info.dev_addr = bmm1.chip_id;
 
   int8_t rslt = bmi270_init(&bmi2);
-  Serial.println("bmi270_init");
   print_rslt(rslt);
-
-  rslt = bmm150_init(&bmm1);
-  Serial.println("bmm150_init");
-  print_rslt(rslt);
-
-  // TODO: FIX INTERRUPT
-  attachInterrupt(BMI270_INT1, bmi2_intr1_callback, CHANGE);
 
   rslt = configure_sensor(&bmi2);
   print_rslt(rslt);
+
+  rslt = bmm150_init(&bmm1);
+  print_rslt(rslt);
+
+  rslt = configure_sensor(&bmm1);
+  print_rslt(rslt);
+
+  _initialized = true;
 }
 
-void BoschSensorClass::loop(void)
-{
-  if (bmi2_intr_recvd)
-  {
-    bmi2_intr_recvd = false;
+// Accelerometer
+int BoschSensorClass::readAcceleration(float& x, float& y, float& z) {
+  struct bmi2_sens_data sensor_data;
+  bmi2_get_sensor_data(&sensor_data, &bmi2);
+  x = sensor_data.acc.x;
+  y = sensor_data.acc.y;
+  z = sensor_data.acc.z;
+  _interrupts--;
+}
 
-    struct bmi2_sens_data sensor_data;
-    int8_t rslt = bmi2_get_sensor_data(&sensor_data, &bmi2);
-    print_rslt(rslt);
-
-    Serial.print(last_time_us); // Comment out this line if using the Serial plotter
-    Serial.print(","); // Comment out this line if using the Serial plotter
-    Serial.print(sensor_data.acc.x);
-    Serial.print(",");
-    Serial.print(sensor_data.acc.y);
-    Serial.print(",");
-    Serial.print(sensor_data.acc.z);
-    Serial.print(",");
-    Serial.print(sensor_data.gyr.x);
-    Serial.print(",");
-    Serial.print(sensor_data.gyr.y);
-    Serial.print(",");
-    Serial.print(sensor_data.gyr.z);
-    Serial.println();
+int BoschSensorClass::accelerationAvailable() {
+  if (_cb) {
+    yield();
+    return _interrupts;
   }
-  delay(100);
+  return 1;
 }
 
-int8_t configure_sensor(struct bmi2_dev *dev)
+float BoschSensorClass::accelerationSampleRate() {
+  struct bmi2_sens_config sens_cfg;
+  sens_cfg.type = BMI2_ACCEL;
+  bmi2_get_sensor_config(&sens_cfg, 1, &bmi2);
+  return (1 << sens_cfg.cfg.acc.odr) * 0.39;
+}
+
+// Gyroscope
+int BoschSensorClass::readGyroscope(float& x, float& y, float& z) {
+  struct bmi2_sens_data sensor_data;
+  bmi2_get_sensor_data(&sensor_data, &bmi2);
+  x = sensor_data.gyr.x;
+  y = sensor_data.gyr.y;
+  z = sensor_data.gyr.z;
+  _interrupts--;
+}
+
+int BoschSensorClass::gyroscopeAvailable() {
+  if (_cb) {
+    yield();
+    return _interrupts;
+  }
+  return 1;
+}
+
+float BoschSensorClass::gyroscopeSampleRate() {
+  struct bmi2_sens_config sens_cfg;
+  sens_cfg.type = BMI2_GYRO;
+  bmi2_get_sensor_config(&sens_cfg, 1, &bmi2);
+  return (1 << sens_cfg.cfg.gyr.odr) * 0.39;
+}
+
+// Magnetometer
+int BoschSensorClass::readMagneticField(float& x, float& y, float& z) {
+  struct bmm150_mag_data mag_data;
+  bmm150_read_mag_data(&mag_data, &bmm1);
+  x = mag_data.x;
+  y = mag_data.y;
+  z = mag_data.z;
+}
+
+int BoschSensorClass::magneticFieldAvailable() {
+  return 1;
+}
+
+float BoschSensorClass::magneticFieldSampleRate() {
+  struct bmm150_settings settings;
+  bmm150_get_sensor_settings(&settings, &bmm1);
+  switch (settings.data_rate) {
+    case BMM150_DATA_RATE_10HZ:
+      return 10;
+    case BMM150_DATA_RATE_02HZ:
+      return 2;
+    case BMM150_DATA_RATE_06HZ:
+      return 6;
+    case BMM150_DATA_RATE_08HZ:
+      return 8;
+    case BMM150_DATA_RATE_15HZ:
+      return 15;
+    case BMM150_DATA_RATE_20HZ:
+      return 20;
+    case BMM150_DATA_RATE_25HZ:
+      return 25;
+    case BMM150_DATA_RATE_30HZ:
+      return 30;
+  }
+  return 0;
+}
+
+int8_t BoschSensorClass::configure_sensor(struct bmi2_dev *dev)
 {
   int8_t rslt;
   uint8_t sens_list[2] = { BMI2_ACCEL, BMI2_GYRO };
@@ -124,7 +172,7 @@ int8_t configure_sensor(struct bmi2_dev *dev)
   sens_cfg[0].cfg.acc.bwp = BMI2_ACC_OSR2_AVG2;
   sens_cfg[0].cfg.acc.odr = BMI2_ACC_ODR_100HZ;
   sens_cfg[0].cfg.acc.filter_perf = BMI2_PERF_OPT_MODE,
-                      sens_cfg[0].cfg.acc.range = BMI2_ACC_RANGE_4G;
+  sens_cfg[0].cfg.acc.range = BMI2_ACC_RANGE_4G;
   sens_cfg[1].type = BMI2_GYRO;
   sens_cfg[1].cfg.gyr.filter_perf = BMI2_PERF_OPT_MODE;
   sens_cfg[1].cfg.gyr.bwp = BMI2_GYR_OSR2_MODE;
@@ -149,6 +197,34 @@ int8_t configure_sensor(struct bmi2_dev *dev)
     return rslt;
 
   return rslt;
+}
+
+int8_t BoschSensorClass::configure_sensor(struct bmm150_dev *dev)
+{
+    /* Status of api are returned to this variable. */
+    int8_t rslt;
+    struct bmm150_settings settings;
+
+    /* Set powermode as normal mode */
+    settings.pwr_mode = BMM150_POWERMODE_NORMAL;
+    rslt = bmm150_set_op_mode(&settings, dev);
+
+    if (rslt == BMM150_OK)
+    {
+        /* Setting the preset mode as Low power mode
+         * i.e. data rate = 10Hz, XY-rep = 1, Z-rep = 2
+         */
+        settings.preset_mode = BMM150_PRESETMODE_REGULAR;
+        //rslt = bmm150_set_presetmode(&settings, dev);
+
+        if (rslt == BMM150_OK)
+        {
+            /* Map the data interrupt pin */
+            settings.int_settings.drdy_pin_en = 0x01;
+            //rslt = bmm150_set_sensor_settings(BMM150_SEL_DRDY_PIN_EN, &settings, dev);
+        }
+    }
+    return rslt;
 }
 
 int8_t BoschSensorClass::bmi2_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr)
@@ -203,15 +279,17 @@ void BoschSensorClass::bmi2_delay_us(uint32_t period, void *intf_ptr)
   delayMicroseconds(period);
 }
 
-void bmi2_intr1_callback(void)
+void BoschSensorClass::interrupt_handler()
 {
-  bmi2_intr_recvd = true;
-  last_time_us = micros();
-  // todo: trigger bmi2_get_sensor_data in backgroud
+  _interrupts++;
+  if (_initialized && _cb) {
+    _cb();
+  }
 }
 
-void panic_led_trap(void)
+static void panic_led_trap(void)
 {
+  pinMode(LED_BUILTIN, OUTPUT);
   while (1)
   {
     digitalWrite(LED_BUILTIN, LOW);
@@ -221,149 +299,152 @@ void panic_led_trap(void)
   }
 }
 
-void print_rslt(int8_t rslt)
+void BoschSensorClass::print_rslt(int8_t rslt)
 {
+  if (!_debug) {
+    return;
+  }
   switch (rslt)
   {
     case BMI2_OK: return; /* Do nothing */ break;
     case BMI2_E_NULL_PTR:
-      Serial.println("Error [" + String(rslt) + "] : Null pointer");
+      _debug->println("Error [" + String(rslt) + "] : Null pointer");
       panic_led_trap();
       break;
     case BMI2_E_COM_FAIL:
-      Serial.println("Error [" + String(rslt) + "] : Communication failure");
+      _debug->println("Error [" + String(rslt) + "] : Communication failure");
       panic_led_trap();
       break;
     case BMI2_E_DEV_NOT_FOUND:
-      Serial.println("Error [" + String(rslt) + "] : Device not found");
+      _debug->println("Error [" + String(rslt) + "] : Device not found");
       panic_led_trap();
       break;
     case BMI2_E_OUT_OF_RANGE:
-      Serial.println("Error [" + String(rslt) + "] : Out of range");
+      _debug->println("Error [" + String(rslt) + "] : Out of range");
       panic_led_trap();
       break;
     case BMI2_E_ACC_INVALID_CFG:
-      Serial.println("Error [" + String(rslt) + "] : Invalid accel configuration");
+      _debug->println("Error [" + String(rslt) + "] : Invalid accel configuration");
       panic_led_trap();
       break;
     case BMI2_E_GYRO_INVALID_CFG:
-      Serial.println("Error [" + String(rslt) + "] : Invalid gyro configuration");
+      _debug->println("Error [" + String(rslt) + "] : Invalid gyro configuration");
       panic_led_trap();
       break;
     case BMI2_E_ACC_GYR_INVALID_CFG:
-      Serial.println("Error [" + String(rslt) + "] : Invalid accel/gyro configuration");
+      _debug->println("Error [" + String(rslt) + "] : Invalid accel/gyro configuration");
       panic_led_trap();
       break;
     case BMI2_E_INVALID_SENSOR:
-      Serial.println("Error [" + String(rslt) + "] : Invalid sensor");
+      _debug->println("Error [" + String(rslt) + "] : Invalid sensor");
       panic_led_trap();
       break;
     case BMI2_E_CONFIG_LOAD:
-      Serial.println("Error [" + String(rslt) + "] : Configuration loading error");
+      _debug->println("Error [" + String(rslt) + "] : Configuration loading error");
       panic_led_trap();
       break;
     case BMI2_E_INVALID_PAGE:
-      Serial.println("Error [" + String(rslt) + "] : Invalid page ");
+      _debug->println("Error [" + String(rslt) + "] : Invalid page ");
       panic_led_trap();
       break;
     case BMI2_E_INVALID_FEAT_BIT:
-      Serial.println("Error [" + String(rslt) + "] : Invalid feature bit");
+      _debug->println("Error [" + String(rslt) + "] : Invalid feature bit");
       panic_led_trap();
       break;
     case BMI2_E_INVALID_INT_PIN:
-      Serial.println("Error [" + String(rslt) + "] : Invalid interrupt pin");
+      _debug->println("Error [" + String(rslt) + "] : Invalid interrupt pin");
       panic_led_trap();
       break;
     case BMI2_E_SET_APS_FAIL:
-      Serial.println("Error [" + String(rslt) + "] : Setting advanced power mode failed");
+      _debug->println("Error [" + String(rslt) + "] : Setting advanced power mode failed");
       panic_led_trap();
       break;
     case BMI2_E_AUX_INVALID_CFG:
-      Serial.println("Error [" + String(rslt) + "] : Invalid auxilliary configuration");
+      _debug->println("Error [" + String(rslt) + "] : Invalid auxilliary configuration");
       panic_led_trap();
       break;
     case BMI2_E_AUX_BUSY:
-      Serial.println("Error [" + String(rslt) + "] : Auxilliary busy");
+      _debug->println("Error [" + String(rslt) + "] : Auxilliary busy");
       panic_led_trap();
       break;
     case BMI2_E_SELF_TEST_FAIL:
-      Serial.println("Error [" + String(rslt) + "] : Self test failed");
+      _debug->println("Error [" + String(rslt) + "] : Self test failed");
       panic_led_trap();
       break;
     case BMI2_E_REMAP_ERROR:
-      Serial.println("Error [" + String(rslt) + "] : Remapping error");
+      _debug->println("Error [" + String(rslt) + "] : Remapping error");
       panic_led_trap();
       break;
     case BMI2_E_GYR_USER_GAIN_UPD_FAIL:
-      Serial.println("Error [" + String(rslt) + "] : Gyro user gain update failed");
+      _debug->println("Error [" + String(rslt) + "] : Gyro user gain update failed");
       panic_led_trap();
       break;
     case BMI2_E_SELF_TEST_NOT_DONE:
-      Serial.println("Error [" + String(rslt) + "] : Self test not done");
+      _debug->println("Error [" + String(rslt) + "] : Self test not done");
       panic_led_trap();
       break;
     case BMI2_E_INVALID_INPUT:
-      Serial.println("Error [" + String(rslt) + "] : Invalid input");
+      _debug->println("Error [" + String(rslt) + "] : Invalid input");
       panic_led_trap();
       break;
     case BMI2_E_INVALID_STATUS:
-      Serial.println("Error [" + String(rslt) + "] : Invalid status");
+      _debug->println("Error [" + String(rslt) + "] : Invalid status");
       panic_led_trap();
       break;
     case BMI2_E_CRT_ERROR:
-      Serial.println("Error [" + String(rslt) + "] : CRT error");
+      _debug->println("Error [" + String(rslt) + "] : CRT error");
       panic_led_trap();
       break;
     case BMI2_E_ST_ALREADY_RUNNING:
-      Serial.println("Error [" + String(rslt) + "] : Self test already running");
+      _debug->println("Error [" + String(rslt) + "] : Self test already running");
       panic_led_trap();
       break;
     case BMI2_E_CRT_READY_FOR_DL_FAIL_ABORT:
-      Serial.println("Error [" + String(rslt) + "] : CRT ready for DL fail abort");
+      _debug->println("Error [" + String(rslt) + "] : CRT ready for DL fail abort");
       panic_led_trap();
       break;
     case BMI2_E_DL_ERROR:
-      Serial.println("Error [" + String(rslt) + "] : DL error");
+      _debug->println("Error [" + String(rslt) + "] : DL error");
       panic_led_trap();
       break;
     case BMI2_E_PRECON_ERROR:
-      Serial.println("Error [" + String(rslt) + "] : PRECON error");
+      _debug->println("Error [" + String(rslt) + "] : PRECON error");
       panic_led_trap();
       break;
     case BMI2_E_ABORT_ERROR:
-      Serial.println("Error [" + String(rslt) + "] : Abort error");
+      _debug->println("Error [" + String(rslt) + "] : Abort error");
       panic_led_trap();
       break;
     case BMI2_E_GYRO_SELF_TEST_ERROR:
-      Serial.println("Error [" + String(rslt) + "] : Gyro self test error");
+      _debug->println("Error [" + String(rslt) + "] : Gyro self test error");
       panic_led_trap();
       break;
     case BMI2_E_GYRO_SELF_TEST_TIMEOUT:
-      Serial.println("Error [" + String(rslt) + "] : Gyro self test timeout");
+      _debug->println("Error [" + String(rslt) + "] : Gyro self test timeout");
       panic_led_trap();
       break;
     case BMI2_E_WRITE_CYCLE_ONGOING:
-      Serial.println("Error [" + String(rslt) + "] : Write cycle ongoing");
+      _debug->println("Error [" + String(rslt) + "] : Write cycle ongoing");
       panic_led_trap();
       break;
     case BMI2_E_WRITE_CYCLE_TIMEOUT:
-      Serial.println("Error [" + String(rslt) + "] : Write cycle timeout");
+      _debug->println("Error [" + String(rslt) + "] : Write cycle timeout");
       panic_led_trap();
       break;
     case BMI2_E_ST_NOT_RUNING:
-      Serial.println("Error [" + String(rslt) + "] : Self test not running");
+      _debug->println("Error [" + String(rslt) + "] : Self test not running");
       panic_led_trap();
       break;
     case BMI2_E_DATA_RDY_INT_FAILED:
-      Serial.println("Error [" + String(rslt) + "] : Data ready interrupt failed");
+      _debug->println("Error [" + String(rslt) + "] : Data ready interrupt failed");
       panic_led_trap();
       break;
     case BMI2_E_INVALID_FOC_POSITION:
-      Serial.println("Error [" + String(rslt) + "] : Invalid FOC position");
+      _debug->println("Error [" + String(rslt) + "] : Invalid FOC position");
       panic_led_trap();
       break;
     default:
-      Serial.println("Error [" + String(rslt) + "] : Unknown error code");
+      _debug->println("Error [" + String(rslt) + "] : Unknown error code");
       panic_led_trap();
       break;
   }

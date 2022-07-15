@@ -19,6 +19,13 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include "utilities/BMI270-Sensor-API/bmi270.h"
+#include "utilities/BMM150-Sensor-API/bmm150.h"
+
+struct dev_info {
+  TwoWire* _wire;
+  uint8_t dev_addr;
+};
 
 class BoschSensorClass {
   public:
@@ -28,9 +35,11 @@ class BoschSensorClass {
     int begin();
     void end();
 
-    void loop();
+    void debug(arduino::Stream&);
+    void onInterrupt(mbed::Callback<void()>);
 
-#if 0
+    static const PinName BMI270_INT1 = p11;
+
     // Accelerometer
     virtual int readAcceleration(float& x, float& y, float& z); // Results are in G (earth gravity).
     virtual int accelerationAvailable(); // Number of samples in the FIFO.
@@ -47,19 +56,29 @@ class BoschSensorClass {
     virtual float magneticFieldSampleRate(); // Sampling rate of the sensor.
 
     float getTemperature();
-#endif
+
+  protected:
+    // can be modified by subclassing for finer configuration
+    int8_t configure_sensor(struct bmm150_dev *dev);
+    int8_t configure_sensor(struct bmi2_dev *dev);
 
   private:
-    int readRegister(uint8_t slaveAddress, uint8_t address);
-    int readRegisters(uint8_t slaveAddress, uint8_t address, uint8_t* data, size_t length);
-    int writeRegister(uint8_t slaveAddress, uint8_t address, uint8_t value);
-
     static int8_t bmi2_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr);
     static int8_t bmi2_i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr);
     static void bmi2_delay_us(uint32_t period, void *intf_ptr);
+    void interrupt_handler();
+    void print_rslt(int8_t rslt);
 
   private:
     TwoWire* _wire;
+    Stream* _debug = nullptr;
+    mbed::Callback<void(void)> _cb;
+    bool _initialized = false;
+    int _interrupts = 0;
+    struct dev_info accel_gyro_dev_info;
+    struct dev_info mag_dev_info;
+    struct bmi2_dev bmi2;
+    struct bmm150_dev bmm1;
 };
 
 extern BoschSensorClass IMU;
