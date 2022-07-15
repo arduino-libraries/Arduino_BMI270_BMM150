@@ -29,8 +29,8 @@ struct dev_info {
 
 class BoschSensorClass {
   public:
-    BoschSensorClass(TwoWire& wire);
-    virtual ~BoschSensorClass() {}
+    BoschSensorClass(TwoWire& wire = Wire);
+    ~BoschSensorClass() {}
 
     int begin();
     void end();
@@ -59,8 +59,8 @@ class BoschSensorClass {
 
   protected:
     // can be modified by subclassing for finer configuration
-    int8_t configure_sensor(struct bmm150_dev *dev);
-    int8_t configure_sensor(struct bmi2_dev *dev);
+    virtual int8_t configure_sensor(struct bmm150_dev *dev);
+    virtual int8_t configure_sensor(struct bmi2_dev *dev);
 
   private:
     static int8_t bmi2_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr);
@@ -79,6 +79,7 @@ class BoschSensorClass {
     struct dev_info mag_dev_info;
     struct bmi2_dev bmi2;
     struct bmm150_dev bmm1;
+    uint16_t _int_status;
 };
 
 extern BoschSensorClass IMU;

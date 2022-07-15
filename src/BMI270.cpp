@@ -23,7 +23,7 @@ void BoschSensorClass::onInterrupt(mbed::Callback<void(void)> cb)
 {
   _cb = cb;
   event_t.start(callback(&queue, &events::EventQueue::dispatch_forever));
-  irq.rise(queue.event(mbed::callback(this, &BoschSensorClass::interrupt_handler)));
+  irq.rise(mbed::callback(this, &BoschSensorClass::interrupt_handler));
 }
 
 int BoschSensorClass::begin() {
@@ -74,15 +74,15 @@ int BoschSensorClass::readAcceleration(float& x, float& y, float& z) {
   x = sensor_data.acc.x;
   y = sensor_data.acc.y;
   z = sensor_data.acc.z;
-  _interrupts--;
 }
 
 int BoschSensorClass::accelerationAvailable() {
-  if (_cb) {
-    yield();
-    return _interrupts;
-  }
-  return 1;
+  uint16_t status;
+  bmi2_get_int_status(&status, &bmi2);
+  int ret = ((status | _int_status) & BMI2_ACC_DRDY_INT_MASK);
+  _int_status = status;
+  _int_status &= ~BMI2_ACC_DRDY_INT_MASK;
+  return ret;
 }
 
 float BoschSensorClass::accelerationSampleRate() {
@@ -99,15 +99,15 @@ int BoschSensorClass::readGyroscope(float& x, float& y, float& z) {
   x = sensor_data.gyr.x;
   y = sensor_data.gyr.y;
   z = sensor_data.gyr.z;
-  _interrupts--;
 }
 
 int BoschSensorClass::gyroscopeAvailable() {
-  if (_cb) {
-    yield();
-    return _interrupts;
-  }
-  return 1;
+  uint16_t status;
+  bmi2_get_int_status(&status, &bmi2);
+  int ret = ((status | _int_status) & BMI2_GYR_DRDY_INT_MASK);
+  _int_status = status;
+  _int_status &= ~BMI2_GYR_DRDY_INT_MASK;
+  return ret;
 }
 
 float BoschSensorClass::gyroscopeSampleRate() {
@@ -127,7 +127,8 @@ int BoschSensorClass::readMagneticField(float& x, float& y, float& z) {
 }
 
 int BoschSensorClass::magneticFieldAvailable() {
-  return 1;
+  bmm150_get_interrupt_status(&bmm1);
+  return bmm1.int_status & BMM150_INT_ASSERTED_DRDY;
 }
 
 float BoschSensorClass::magneticFieldSampleRate() {
@@ -171,7 +172,7 @@ int8_t BoschSensorClass::configure_sensor(struct bmi2_dev *dev)
   sens_cfg[0].type = BMI2_ACCEL;
   sens_cfg[0].cfg.acc.bwp = BMI2_ACC_OSR2_AVG2;
   sens_cfg[0].cfg.acc.odr = BMI2_ACC_ODR_100HZ;
-  sens_cfg[0].cfg.acc.filter_perf = BMI2_PERF_OPT_MODE,
+  sens_cfg[0].cfg.acc.filter_perf = BMI2_PERF_OPT_MODE;
   sens_cfg[0].cfg.acc.range = BMI2_ACC_RANGE_4G;
   sens_cfg[1].type = BMI2_GYRO;
   sens_cfg[1].cfg.gyr.filter_perf = BMI2_PERF_OPT_MODE;
@@ -281,9 +282,8 @@ void BoschSensorClass::bmi2_delay_us(uint32_t period, void *intf_ptr)
 
 void BoschSensorClass::interrupt_handler()
 {
-  _interrupts++;
   if (_initialized && _cb) {
-    _cb();
+    queue.call(_cb);
   }
 }
 
