@@ -39,9 +39,10 @@ class BoschSensorClass {
     void end();
 
     void debug(arduino::Stream&);
+    #ifdef __MBED__
     void onInterrupt(mbed::Callback<void()>);
     static const PinName BMI270_INT1 = p11;
-    
+    #endif
     // Accelerometer
     virtual int readAcceleration(float& x, float& y, float& z); // Results are in G (earth gravity).
     virtual int accelerationAvailable(); // Number of samples in the FIFO.
@@ -74,7 +75,9 @@ class BoschSensorClass {
   private:
     TwoWire* _wire;
     Stream* _debug = nullptr;
+    #ifdef __MBED__
     mbed::Callback<void(void)> _cb;
+    #endif
     bool _initialized = false;
     int _interrupts = 0;
     struct dev_info accel_gyro_dev_info;

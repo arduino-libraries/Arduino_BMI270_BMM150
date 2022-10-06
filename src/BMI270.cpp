@@ -2,7 +2,7 @@
 #include "Wire.h"
 #include "BoschSensorClass.h"
 
-
+#ifdef __MBED__
 #include "mbed_events.h"
 #include "mbed_shared_queues.h"
 #include "drivers/InterruptIn.h"
@@ -10,7 +10,7 @@
 static mbed::InterruptIn irq(BoschSensorClass::BMI270_INT1, PullDown);
 static events::EventQueue queue(10 * EVENTS_EVENT_SIZE);
 static rtos::Thread event_t(osPriorityHigh, 768, nullptr, "events");
-
+#endif
 BoschSensorClass::BoschSensorClass(TwoWire& wire)
 {
   _wire = &wire;
@@ -20,14 +20,14 @@ void BoschSensorClass::debug(Stream& stream)
 {
   _debug = &stream;
 }
-
+#ifdef __MBED__
 void BoschSensorClass::onInterrupt(mbed::Callback<void(void)> cb)
 {
   _cb = cb;
   event_t.start(callback(&queue, &events::EventQueue::dispatch_forever));
   irq.rise(mbed::callback(this, &BoschSensorClass::interrupt_handler));
 }
-
+#endif
 int BoschSensorClass::begin() {
 
   _wire->begin();
@@ -281,14 +281,14 @@ void BoschSensorClass::bmi2_delay_us(uint32_t period, void *intf_ptr)
 {
   delayMicroseconds(period);
 }
-
+#ifdef __MBED__
 void BoschSensorClass::interrupt_handler()
 {
   if (_initialized && _cb) {
     queue.call(_cb);
   }
 }
-
+#endif
 static void panic_led_trap(void)
 {
   pinMode(LED_BUILTIN, OUTPUT);
