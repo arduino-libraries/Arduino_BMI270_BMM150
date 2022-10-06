@@ -21,7 +21,10 @@
 #include <Wire.h>
 #include "utilities/BMI270-Sensor-API/bmi270.h"
 #include "utilities/BMM150-Sensor-API/bmm150.h"
+#include "ArduinoIMU.h"
 
+
+#define IMU_INCLUDED !HAS_INCLUDE_IMU
 struct dev_info {
   TwoWire* _wire;
   uint8_t dev_addr;
@@ -37,9 +40,8 @@ class BoschSensorClass {
 
     void debug(arduino::Stream&);
     void onInterrupt(mbed::Callback<void()>);
-
     static const PinName BMI270_INT1 = p11;
-
+    
     // Accelerometer
     virtual int readAcceleration(float& x, float& y, float& z); // Results are in G (earth gravity).
     virtual int accelerationAvailable(); // Number of samples in the FIFO.
@@ -82,4 +84,6 @@ class BoschSensorClass {
     uint16_t _int_status;
 };
 
-extern BoschSensorClass IMU;
+#if IMU_INCLUDED
+  extern BoschSensorClass IMU;
+#endif

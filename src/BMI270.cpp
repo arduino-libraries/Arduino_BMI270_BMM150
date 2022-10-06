@@ -1,6 +1,8 @@
 #include "Arduino.h"
 #include "Wire.h"
 #include "BoschSensorClass.h"
+
+
 #include "mbed_events.h"
 #include "mbed_shared_queues.h"
 #include "drivers/InterruptIn.h"
@@ -450,4 +452,6 @@ void BoschSensorClass::print_rslt(int8_t rslt)
   }
 }
 
-BoschSensorClass IMU(Wire1);
+#if IMU_INCLUDED
+  BoschSensorClass IMU(Wire1);
+#endif
