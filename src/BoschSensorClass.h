@@ -21,10 +21,7 @@
 #include <Wire.h>
 #include "utilities/BMI270-Sensor-API/bmi270.h"
 #include "utilities/BMM150-Sensor-API/bmm150.h"
-#include "ArduinoIMU.h"
 
-
-#define IMU_INCLUDED !HAS_INCLUDE_IMU
 struct dev_info {
   TwoWire* _wire;
   uint8_t dev_addr;
@@ -87,6 +84,6 @@ class BoschSensorClass {
     uint16_t _int_status;
 };
 
-#if IMU_INCLUDED
-  extern BoschSensorClass IMU;
-#endif
+extern BoschSensorClass IMU_BMI270_BMM150;
+#undef IMU
+#define IMU IMU_BMI270_BMM150

@@ -452,6 +452,8 @@ void BoschSensorClass::print_rslt(int8_t rslt)
   }
 }
 
-#if IMU_INCLUDED
-  BoschSensorClass IMU(Wire1);
+#ifdef TARGET_ARDUINO_NANO33BLE
+BoschSensorClass IMU_BMI270_BMM150(Wire1);
+#else
+BoschSensorClass IMU_BMI270_BMM150(Wire);
 #endif
