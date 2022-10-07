@@ -1,5 +1,5 @@
 #######################################
-# Syntax Coloring Map For Arduino_LSM9DS1
+# Syntax Coloring Map For Arduino_BMI270_BMM150
 ####################################### 
 # Class
 #######################################
