@@ -14,7 +14,7 @@
   This example code is in the public domain.
 */
 
-#include <Arduino_LSM9DS1.h>
+#include "Arduino_BMI270_BMM150.h"
 
 void setup() {
   Serial.begin(9600);

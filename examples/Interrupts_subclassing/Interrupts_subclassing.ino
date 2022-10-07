@@ -1,4 +1,4 @@
-#include "Arduino_Nano33BLE_R2_9axis.h"
+#include "Arduino_BMI270_BMM150.h"
 
 class MyBoschSensor: public BoschSensorClass {
 
