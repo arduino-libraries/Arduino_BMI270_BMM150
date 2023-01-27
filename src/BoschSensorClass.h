@@ -38,7 +38,13 @@ class BoschSensorClass {
     void debug(arduino::Stream&);
     #ifdef __MBED__
     void onInterrupt(mbed::Callback<void()>);
-    static const PinName BMI270_INT1 = p11;
+    void setInterruptPin(PinName irq_pin) {
+      BMI270_INT1 = irq_pin;
+    }
+    void setInterruptPin(pin_size_t irq_pin) {
+      BMI270_INT1 = digitalPinToPinName(irq_pin);
+    }
+    PinName BMI270_INT1 = NC;
     #endif
     // Accelerometer
     virtual int readAcceleration(float& x, float& y, float& z); // Results are in G (earth gravity).

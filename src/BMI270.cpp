@@ -7,13 +7,14 @@
 #include "mbed_shared_queues.h"
 #include "drivers/InterruptIn.h"
 
-static mbed::InterruptIn irq(BoschSensorClass::BMI270_INT1, PullDown);
 static events::EventQueue queue(10 * EVENTS_EVENT_SIZE);
-static rtos::Thread event_t(osPriorityHigh, 768, nullptr, "events");
 #endif
 BoschSensorClass::BoschSensorClass(TwoWire& wire)
 {
   _wire = &wire;
+  #ifdef TARGET_ARDUINO_NANO33BLE
+  BMI270_INT1 = p11;
+  #endif
 }
 
 void BoschSensorClass::debug(Stream& stream)
@@ -23,6 +24,11 @@ void BoschSensorClass::debug(Stream& stream)
 #ifdef __MBED__
 void BoschSensorClass::onInterrupt(mbed::Callback<void(void)> cb)
 {
+  if (BMI270_INT1 == NC) {
+    return;
+  }
+  static mbed::InterruptIn irq(BMI270_INT1, PullDown);
+  static rtos::Thread event_t(osPriorityHigh, 768, nullptr, "events");
   _cb = cb;
   event_t.start(callback(&queue, &events::EventQueue::dispatch_forever));
   irq.rise(mbed::callback(this, &BoschSensorClass::interrupt_handler));
