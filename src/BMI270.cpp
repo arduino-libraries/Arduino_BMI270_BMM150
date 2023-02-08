@@ -75,6 +75,17 @@ int BoschSensorClass::begin() {
   _initialized = true;
 }
 
+
+void BoschSensorClass::setContinuousMode() {
+  bmi2_set_fifo_config(BMI2_FIFO_GYR_EN | BMI2_FIFO_ACC_EN, 1, &bmi2);
+  continuousMode = true;
+}
+
+void BoschSensorClass::oneShotMode() {
+  bmi2_set_fifo_config(BMI2_FIFO_GYR_EN | BMI2_FIFO_ACC_EN, 0, &bmi2);
+  continuousMode = false;
+}
+
 // Accelerometer
 int BoschSensorClass::readAcceleration(float& x, float& y, float& z) {
   struct bmi2_sens_data sensor_data;

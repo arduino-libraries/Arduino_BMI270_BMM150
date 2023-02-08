@@ -32,6 +32,9 @@ class BoschSensorClass {
     BoschSensorClass(TwoWire& wire = Wire);
     ~BoschSensorClass() {}
 
+    void setContinuousMode();
+    void oneShotMode();
+
     int begin();
     void end();
 
@@ -88,6 +91,8 @@ class BoschSensorClass {
     struct bmi2_dev bmi2;
     struct bmm150_dev bmm1;
     uint16_t _int_status;
+  private:
+    bool continuousMode;
 };
 
 extern BoschSensorClass IMU_BMI270_BMM150;
