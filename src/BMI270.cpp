@@ -86,13 +86,22 @@ void BoschSensorClass::oneShotMode() {
   continuousMode = false;
 }
 
+// default range is +-4G, so conversion factor is (((1 << 15)/4.0f))
+#define INT16_to_G   (8192.0f)
+
 // Accelerometer
 int BoschSensorClass::readAcceleration(float& x, float& y, float& z) {
   struct bmi2_sens_data sensor_data;
-  bmi2_get_sensor_data(&sensor_data, &bmi2);
-  x = sensor_data.acc.x;
-  y = sensor_data.acc.y;
-  z = sensor_data.acc.z;
+  auto ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
+  #ifdef TARGET_ARDUINO_NANO33BLE
+  x = -sensor_data.acc.y / INT16_to_G;
+  y = -sensor_data.acc.x / INT16_to_G;
+  #else
+  x = sensor_data.acc.x / INT16_to_G;
+  y = sensor_data.acc.y / INT16_to_G;
+  #endif
+  z = sensor_data.acc.z / INT16_to_G;
+  return (ret == 0);
 }
 
 int BoschSensorClass::accelerationAvailable() {
@@ -111,13 +120,22 @@ float BoschSensorClass::accelerationSampleRate() {
   return (1 << sens_cfg.cfg.acc.odr) * 0.39;
 }
 
+// default range is +-2000dps, so conversion factor is (((1 << 15)/4.0f))
+#define INT16_to_DPS   (16.384f)
+
 // Gyroscope
 int BoschSensorClass::readGyroscope(float& x, float& y, float& z) {
   struct bmi2_sens_data sensor_data;
-  bmi2_get_sensor_data(&sensor_data, &bmi2);
-  x = sensor_data.gyr.x;
-  y = sensor_data.gyr.y;
-  z = sensor_data.gyr.z;
+  auto ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
+  #ifdef TARGET_ARDUINO_NANO33BLE
+  x = -sensor_data.gyr.y / INT16_to_DPS;
+  y = -sensor_data.gyr.x / INT16_to_DPS;
+  #else
+  x = sensor_data.gyr.x / INT16_to_DPS;
+  y = sensor_data.gyr.y / INT16_to_DPS;
+  #endif
+  z = sensor_data.gyr.z / INT16_to_DPS;
+  return (ret == 0);
 }
 
 int BoschSensorClass::gyroscopeAvailable() {
