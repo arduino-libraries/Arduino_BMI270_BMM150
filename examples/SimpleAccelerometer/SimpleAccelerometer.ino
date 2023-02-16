@@ -1,12 +1,12 @@
 /*
-  Arduino LSM9DS1 - Simple Accelerometer
+  Arduino BMI270 - Simple Accelerometer
 
-  This example reads the acceleration values from the LSM9DS1
+  This example reads the acceleration values from the BMI270
   sensor and continuously prints them to the Serial Monitor
   or Serial Plotter.
 
   The circuit:
-  - Arduino Nano 33 BLE Sense
+  - Arduino Nano 33 BLE Sense Rev2
 
   created 10 Jul 2019
   by Riccardo Rizzo
