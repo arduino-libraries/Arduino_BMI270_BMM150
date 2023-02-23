@@ -1606,7 +1606,7 @@ static int8_t do_gtrigger_test(uint8_t gyro_st_crt, struct bmi2_dev *dev);
 /*!
  * @brief This function is to get the rdy for dl bit status
  * this will toggle from 0 to 1 and visevers according to the
- * dowload status
+ * download status
  *
  * @param[in] *rdy_for_dl: gets the rdy_for_dl status
  * @param[in] dev   : Structure instance of bmi2_dev
@@ -1620,7 +1620,7 @@ static int8_t get_rdy_for_dl(uint8_t *rdy_for_dl, struct bmi2_dev *dev);
 /*!
  * @brief This function is to write the config file in the given location for crt.
  * which inter checks the status of the rdy_for_dl bit and also the crt running, and
- * wirtes the given size.
+ * writes the given size.
  *
  * @param[in] write_len: length of the words to be written
  * @param[in] config_file_size: length of the words to be written
@@ -1839,7 +1839,7 @@ static int8_t parse_data(uint8_t aux_len,
 static int8_t gyro_crt_test(uint8_t max_burst_length, uint8_t gyro_st_crt, struct bmi2_dev *dev);
 
 /*!
- * @brief This internal API is used to unpack virtual auxillary sensortime data.
+ * @brief This internal API is used to unpack virtual auxiliary sensortime data.
  *
  * @param[out]    aux     : Pointer to structure where the parsed auxiliary data
  *                          bytes are stored.
@@ -7784,7 +7784,7 @@ static int8_t unpack_aux_frame(struct bmi2_aux_fifo_data *aux,
 }
 
 /*!
- * @brief This internal API is used to unpack virtual auxillary sensortime data.
+ * @brief This internal API is used to unpack virtual auxiliary sensortime data.
  */
 static void unpack_virtual_aux_data(struct bmi2_aux_fifo_data *aux,
                                     uint16_t *idx,

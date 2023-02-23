@@ -148,7 +148,7 @@
 #define BMM150_CHIP_ID                            UINT8_C(0x32)
 #define BMM150_SET_SOFT_RESET                     UINT8_C(0x82)
 
-/*! @name POWER MODE DEFINTIONS      */
+/*! @name POWER MODE DEFINITIONS      */
 #define BMM150_POWERMODE_NORMAL                   UINT8_C(0x00)
 #define BMM150_POWERMODE_FORCED                   UINT8_C(0x01)
 #define BMM150_POWERMODE_SLEEP                    UINT8_C(0x03)

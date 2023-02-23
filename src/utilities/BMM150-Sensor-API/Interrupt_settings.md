@@ -62,8 +62,8 @@ BMM150_SEL_LOW_THRESHOLD_SETTING     | Setting Low threshold value to trigger in
 BMM150_SEL_HIGH_THRESHOLD_SETTING    | Setting High threshold value to trigger interrupt
   
 
-   ### TABLE 1.1-Interrupt configuation settings
-|User configration in the dev structure     |Macros which can be assigned| Significance  
+   ### TABLE 1.1-Interrupt configuration settings
+|User configuration in the dev structure     |Macros which can be assigned| Significance  
 |-------------------------------------------|--------------------------- |-----------------------------------------------
 |dev->settings.int_settings.drdy_pin_en     | BMM150_INT_ENABLE          | Maps the data ready interrupt to the DRDY pin of sensor
 |^                                          | BMM150_INT_DISABLE         | Disables the mapping of data ready interrupt signal to the DRDY pin
