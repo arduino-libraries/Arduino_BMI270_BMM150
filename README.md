@@ -1,6 +1,7 @@
 Combined Bosch BMI270 and BMM150 Library for Arduino
 ====================================================
 [![Spell Check status](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/spell-check-task.yml/badge.svg)](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/spell-check-task.yml)
+[![Sync Labels status](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/sync-labels.yml/badge.svg)](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/sync-labels.yml)
 
 Allows you to read the accelerometer, magnetometer and gyroscope values from the combo BMI270+BMM150 IMU on your Arduino Nano 33 BLE Sense Rev2.
 
