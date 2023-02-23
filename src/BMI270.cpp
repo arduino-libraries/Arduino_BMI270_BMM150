@@ -397,11 +397,11 @@ void BoschSensorClass::print_rslt(int8_t rslt)
       panic_led_trap();
       break;
     case BMI2_E_AUX_INVALID_CFG:
-      _debug->println("Error [" + String(rslt) + "] : Invalid auxilliary configuration");
+      _debug->println("Error [" + String(rslt) + "] : Invalid auxiliary configuration");
       panic_led_trap();
       break;
     case BMI2_E_AUX_BUSY:
-      _debug->println("Error [" + String(rslt) + "] : Auxilliary busy");
+      _debug->println("Error [" + String(rslt) + "] : Auxiliary busy");
       panic_led_trap();
       break;
     case BMI2_E_SELF_TEST_FAIL:

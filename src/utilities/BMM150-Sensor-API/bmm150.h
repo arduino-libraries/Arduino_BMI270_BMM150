@@ -411,7 +411,7 @@ int8_t bmm150_perform_self_test(uint8_t self_test_mode, struct bmm150_dev *dev);
 /**
  * \ingroup bmm150
  * \defgroup bmm150ApiInt Interrupt status
- * @brief Obtain interrupt staus flags
+ * @brief Obtain interrupt configuration flags
  */
 
 /*!
