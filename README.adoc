@@ -1,6 +1,6 @@
 = Combined Bosch BMI270 and BMM150 Library for Arduino =
 
-Allows you to read the accelerometer, magnetometer and gyroscope values from the combo BMI270+BMM150 IMU on your Arduino Nano 33 BLE Sense.
+Allows you to read the accelerometer, magnetometer and gyroscope values from the combo BMI270+BMM150 IMU on your Arduino Nano 33 BLE Sense Rev2.
 
 == License ==
 
