@@ -1,5 +1,6 @@
 Combined Bosch BMI270 and BMM150 Library for Arduino
 ====================================================
+[![Compile Examples status](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/compile-examples.yml/badge.svg)](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/compile-examples.yml)
 [![Spell Check](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/spell-check.yml/badge.svg)](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/spell-check.yml)
 [![Sync Labels status](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/sync-labels.yml/badge.svg)](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions/workflows/sync-labels.yml)
 [![Arduino Lint](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/workflows/Arduino%20Lint/badge.svg)](https://github.com/arduino-libraries/Arduino_BMI270_BMM150/actions?workflow=Arduino+Lint)
