@@ -73,6 +73,8 @@ int BoschSensorClass::begin() {
   print_rslt(rslt);
 
   _initialized = true;
+
+  return 1;
 }
 
 
@@ -157,10 +159,15 @@ float BoschSensorClass::gyroscopeSampleRate() {
 // Magnetometer
 int BoschSensorClass::readMagneticField(float& x, float& y, float& z) {
   struct bmm150_mag_data mag_data;
-  bmm150_read_mag_data(&mag_data, &bmm1);
+  int const rc = bmm150_read_mag_data(&mag_data, &bmm1);
   x = mag_data.x;
   y = mag_data.y;
   z = mag_data.z;
+
+  if (rc == BMM150_OK)
+    return 1;
+  else
+    return 0;
 }
 
 int BoschSensorClass::magneticFieldAvailable() {
