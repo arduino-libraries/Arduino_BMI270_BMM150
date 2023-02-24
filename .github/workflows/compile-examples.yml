@@ -17,6 +17,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      UNIVERSAL_SKETCH_PATHS: |
+        - examples/SimpleAccelerometer
+        - examples/SimpleGyroscope
+        - examples/SimpleMagnetometer
       SKETCHES_REPORTS_PATH: sketches-reports
 
     strategy:
@@ -54,12 +58,18 @@ jobs:
           - fqbn: arduino:mbed_portenta:envie_m7
             platforms: |
               - name: arduino:mbed_portenta
+            sketch-paths: |
+              - examples/Interrupts_subclassing
           - fqbn: arduino:mbed_portenta:envie_m4
             platforms: |
               - name: arduino:mbed_portenta
+            sketch-paths: |
+              - examples/Interrupts_subclassing
           - fqbn: arduino:mbed_nano:nano33ble
             platforms: |
               - name: arduino:mbed_nano
+            sketch-paths: |
+              - examples/Interrupts_subclassing
           - fqbn: arduino:mbed_nano:nanorp2040connect
             platforms: |
               - name: arduino:mbed_nano
@@ -74,7 +84,6 @@ jobs:
             platforms: |
               - name: rp2040:rp2040
                 source-url: https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -91,6 +100,10 @@ jobs:
           enable-deltas-report: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
+          sketch-paths: |
+            ${{ env.UNIVERSAL_SKETCH_PATHS }}
+            ${{ matrix.sketch-paths }}
+
 
       - name: Save memory usage change report as artifact
         if: github.event_name == 'pull_request'
