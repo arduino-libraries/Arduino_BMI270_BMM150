@@ -1,4 +1,4 @@
-# ArduinoBmi270_BMM150 library
+# ArduinoBMI270_BMM150 library
 
 ## Methods
 
