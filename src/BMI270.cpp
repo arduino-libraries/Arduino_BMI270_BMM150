@@ -333,6 +333,10 @@ void BoschSensorClass::interrupt_handler()
 #endif
 static void panic_led_trap(void)
 {
+#if !defined(LED_BUILTIN)
+  static int const LED_BUILTIN = 2;
+#endif
+
   pinMode(LED_BUILTIN, OUTPUT);
   while (1)
   {
