@@ -38,7 +38,7 @@ class BoschSensorClass {
     int begin();
     void end();
 
-    void debug(arduino::Stream&);
+    void debug(Stream&);
     #ifdef __MBED__
     void onInterrupt(mbed::Callback<void()>);
     void setInterruptPin(PinName irq_pin) {
