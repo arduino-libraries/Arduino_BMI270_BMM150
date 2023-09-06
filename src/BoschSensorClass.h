@@ -64,8 +64,6 @@ class BoschSensorClass {
     virtual int magneticFieldAvailable(); // Number of samples in the FIFO.
     virtual float magneticFieldSampleRate(); // Sampling rate of the sensor.
 
-    float getTemperature();
-
   protected:
     // can be modified by subclassing for finer configuration
     virtual int8_t configure_sensor(struct bmm150_dev *dev);
