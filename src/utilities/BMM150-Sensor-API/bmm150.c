@@ -593,6 +593,8 @@ int8_t bmm150_init(struct bmm150_dev *dev)
 
                 /* Function to update trim values */
                 rslt = read_trim_registers(dev);
+            } else {
+                rslt = BMM150_E_DEV_NOT_FOUND;
             }
         }
     }

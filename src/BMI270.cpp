@@ -60,21 +60,23 @@ int BoschSensorClass::begin() {
   mag_dev_info._wire = _wire;
   mag_dev_info.dev_addr = bmm1.chip_id;
 
-  int8_t rslt = bmi270_init(&bmi2);
-  print_rslt(rslt);
+  int8_t bmi270InitResult = bmi270_init(&bmi2);
+  print_rslt(bmi270InitResult);
 
-  rslt = configure_sensor(&bmi2);
-  print_rslt(rslt);
+  int8_t bmi270ConfigResult = configure_sensor(&bmi2);
+  print_rslt(bmi270ConfigResult);
 
-  rslt = bmm150_init(&bmm1);
-  print_rslt(rslt);
+  int8_t bmm150InitResult = bmm150_init(&bmm1);
+  print_rslt(bmm150InitResult);
 
-  rslt = configure_sensor(&bmm1);
-  print_rslt(rslt);
+  int8_t bmm150ConfigResult = configure_sensor(&bmm1);
+  print_rslt(bmm150ConfigResult);
 
-  _initialized = true;
+  bool success = bmi270InitResult == BMI2_OK && bmi270ConfigResult == BMI2_OK && 
+                  bmm150InitResult == BMM150_OK && bmm150ConfigResult == BMM150_OK;
+  _initialized = success;
 
-  return 1;
+  return success;
 }
 
 
