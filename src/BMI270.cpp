@@ -34,7 +34,7 @@ void BoschSensorClass::onInterrupt(mbed::Callback<void(void)> cb)
   irq.rise(mbed::callback(this, &BoschSensorClass::interrupt_handler));
 }
 #endif
-int BoschSensorClass::begin() {
+int BoschSensorClass::begin(CfgBoshSensor_t cfg) {
 
   _wire->begin();
 
@@ -60,23 +60,29 @@ int BoschSensorClass::begin() {
   mag_dev_info._wire = _wire;
   mag_dev_info.dev_addr = bmm1.chip_id;
 
-  int8_t bmi270InitResult = bmi270_init(&bmi2);
-  print_rslt(bmi270InitResult);
+  int8_t result = 0;
 
-  int8_t bmi270ConfigResult = configure_sensor(&bmi2);
-  print_rslt(bmi270ConfigResult);
+  if(cfg != BOSCH_MAGNETOMETER_ONLY) {
 
-  int8_t bmm150InitResult = bmm150_init(&bmm1);
-  print_rslt(bmm150InitResult);
+    result  |= bmi270_init(&bmi2);
+    print_rslt(result);
 
-  int8_t bmm150ConfigResult = configure_sensor(&bmm1);
-  print_rslt(bmm150ConfigResult);
+    result  |= configure_sensor(&bmi2);
+    print_rslt(result);
+  }
 
-  bool success = bmi270InitResult == BMI2_OK && bmi270ConfigResult == BMI2_OK && 
-                  bmm150InitResult == BMM150_OK && bmm150ConfigResult == BMM150_OK;
-  _initialized = success;
+  if(cfg != BOSCH_ACCELEROMETER_ONLY) {
 
-  return success;
+    result |= bmm150_init(&bmm1);
+    print_rslt(result);
+
+    result = configure_sensor(&bmm1);
+    print_rslt(result);
+  }
+
+  _initialized = (result == 0);
+
+  return _initialized;
 }
 
 

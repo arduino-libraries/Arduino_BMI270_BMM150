@@ -22,6 +22,12 @@
 #include "utilities/BMI270-Sensor-API/bmi270.h"
 #include "utilities/BMM150-Sensor-API/bmm150.h"
 
+typedef enum {
+  BOSCH_ACCELEROMETER_ONLY,
+  BOSCH_MAGNETOMETER_ONLY,
+  BOSCH_ACCEL_AND_MAGN
+} CfgBoshSensor_t;
+
 struct dev_info {
   TwoWire* _wire;
   uint8_t dev_addr;
@@ -35,7 +41,7 @@ class BoschSensorClass {
     void setContinuousMode();
     void oneShotMode();
 
-    int begin();
+    int begin(CfgBoshSensor_t cfg = BOSCH_ACCEL_AND_MAGN);
     void end();
 
     void debug(Stream&);
