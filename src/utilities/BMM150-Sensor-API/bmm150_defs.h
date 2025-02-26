@@ -330,16 +330,18 @@
 #define BMM150_OP_MODE_POS                        UINT8_C(0x01)
 
 /*! @name PRESET MODES - REPETITIONS-XY RATES */
-#define BMM150_REPXY_LOWPOWER                     UINT8_C(0x01)
-#define BMM150_REPXY_REGULAR                      UINT8_C(0x04)
-#define BMM150_REPXY_ENHANCED                     UINT8_C(0x07)
-#define BMM150_REPXY_HIGHACCURACY                 UINT8_C(0x17)
+// nXY=1+2⋅(REPXY)
+#define BMM150_REPXY_LOWPOWER                     UINT8_C(0x01) // nXY = 3
+#define BMM150_REPXY_REGULAR                      UINT8_C(0x04) // nXY = 9
+#define BMM150_REPXY_ENHANCED                     UINT8_C(0x07) // nXY = 15
+#define BMM150_REPXY_HIGHACCURACY                 UINT8_C(0x17) // nXY = 47
 
 /*! @name PRESET MODES - REPETITIONS-Z RATES */
-#define BMM150_REPZ_LOWPOWER                      UINT8_C(0x01)
-#define BMM150_REPZ_REGULAR                       UINT8_C(0x07)
-#define BMM150_REPZ_ENHANCED                      UINT8_C(0x0D)
-#define BMM150_REPZ_HIGHACCURACY                  UINT8_C(0x29)
+// nZ=1+(REPZ)
+#define BMM150_REPZ_LOWPOWER                      UINT8_C(0x02) // nZ = 3
+#define BMM150_REPZ_REGULAR                       UINT8_C(0x0E) // nZ = 15
+#define BMM150_REPZ_ENHANCED                      UINT8_C(0x1A) // nZ = 27
+#define BMM150_REPZ_HIGHACCURACY                  UINT8_C(0x52) // nZ = 83
 
 /*! @name Self test settings */
 #define BMM150_DISABLE_XY_AXIS                    UINT8_C(0x03)
