@@ -9,10 +9,15 @@
 
 static events::EventQueue queue(10 * EVENTS_EVENT_SIZE);
 #endif
+
+#if defined(ARDUINO_NANO33BLE)
+#define TARGET_ARDUINO_NANO33BLE
+#endif
+
 BoschSensorClass::BoschSensorClass(TwoWire& wire)
 {
   _wire = &wire;
-  #ifdef TARGET_ARDUINO_NANO33BLE
+  #if defined(TARGET_ARDUINO_NANO33BLE) && defined(__MBED__)
   BMI270_INT1 = p11;
   #endif
 }
