@@ -282,7 +282,7 @@ int8_t BoschSensorClass::configure_sensor(struct bmm150_dev *dev)
 
 int8_t BoschSensorClass::bmi2_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr)
 {
-  if ((reg_data == NULL) || (len == 0) || (len > 32)) {
+  if ((reg_data == NULL) || (len == 0) || (len > 250)) {
     return -1;
   }
   uint8_t bytes_received;
@@ -308,7 +308,7 @@ int8_t BoschSensorClass::bmi2_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint
 
 int8_t BoschSensorClass::bmi2_i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr)
 {
-  if ((reg_data == NULL) || (len == 0) || (len > 32)) {
+  if ((reg_data == NULL) || (len == 0) || (len > 250)) {
     return -1;
   }
 
@@ -316,10 +316,7 @@ int8_t BoschSensorClass::bmi2_i2c_write(uint8_t reg_addr, const uint8_t *reg_dat
   uint8_t dev_id = dev_info->dev_addr;
   dev_info->_wire->beginTransmission(dev_id);
   dev_info->_wire->write(reg_addr);
-  for (uint16_t i = 0; i < len; i++)
-  {
-    dev_info->_wire->write(reg_data[i]);
-  }
+  dev_info->_wire->write(reg_data, (size_t)len);
   if (dev_info->_wire->endTransmission() != 0) {
     return -1;
   }
