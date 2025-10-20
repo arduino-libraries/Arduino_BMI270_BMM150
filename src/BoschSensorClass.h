@@ -28,9 +28,104 @@ typedef enum {
   BOSCH_ACCEL_AND_MAGN
 } CfgBoshSensor_t;
 
+typedef enum {
+  BMI270_ACCELEROMETER,
+  BMI270_GYROSCOPE,
+} BoschSensorType_t;
+
 struct dev_info {
   TwoWire* _wire;
   uint8_t dev_addr;
+};
+
+class ContinuousMode {
+public:
+  ContinuousMode(struct bmi2_dev * dev) : bmi2(dev) {}
+  void begin() {
+    fifoFrame.data = fifoData;
+    fifoFrame.length = sizeof(fifoData);
+    bmi2_set_fifo_config(BMI2_FIFO_GYR_EN | BMI2_FIFO_ACC_EN, 1, bmi2);
+    bmi2_set_fifo_config(BMI2_FIFO_HEADER_EN, BMI2_DISABLE, bmi2);
+    bmi2_map_data_int(BMI2_FWM_INT, BMI2_INT1, bmi2);
+    bmi2_set_fifo_wm((sizeof(fifoData)), bmi2);
+    continuousMode = true;
+  }
+
+  void end() {
+    bmi2_set_fifo_config(BMI2_FIFO_GYR_EN | BMI2_FIFO_ACC_EN, 0, bmi2);
+    continuousMode = false;
+  }
+
+  int available(BoschSensorType_t sensor) {
+    uint16_t status;
+    bmi2_get_int_status(&status, bmi2);
+    if ((status & BMI2_FWM_INT_STATUS_MASK) == 0) {
+      return 0;
+    }
+    switch (sensor) {
+      case BMI270_ACCELEROMETER:
+        if (_availableA != 0) {
+          return 1;
+        }
+        break;
+      case BMI270_GYROSCOPE:
+        if (_availableG != 0) {
+          return 1;
+        }
+        break;
+    }
+    bmi2_get_fifo_length(&status, bmi2);
+    auto ret = bmi2_read_fifo_data(&fifoFrame, bmi2);
+    if (ret != 0) {
+      return 0;
+    }
+    _available = min(status, sizeof(fifoData)) / (6 + 6); // 6 bytes per accel sample
+    _availableG = _available;
+    _availableA = _available;
+    ret = bmi2_extract_accel(accel_data, &_available, &fifoFrame, bmi2);
+    ret = bmi2_extract_gyro(gyro_data, &_available, &fifoFrame, bmi2);
+    return _available;
+  }
+
+  int hasData(BoschSensorType_t sensor) {
+    switch (sensor) {
+      case BMI270_ACCELEROMETER:
+        return _availableA > 0;
+      case BMI270_GYROSCOPE:
+        return _availableG > 0;
+    }
+    return 0;
+  }
+
+  void getGyroscopeData(struct bmi2_sens_axes_data* gyr) {
+    gyr->x = gyro_data[samples_count - 1 - _availableG].x;
+    gyr->y = gyro_data[samples_count - 1 - _availableG].y;
+    gyr->z = gyro_data[samples_count - 1 - _availableG].z;
+    _availableG--;
+  }
+
+  void getAccelerometerData(struct bmi2_sens_axes_data* acc) {
+    acc->x = accel_data[samples_count - 1 - _availableA].x;
+    acc->y = accel_data[samples_count - 1 - _availableA].y;
+    acc->z = accel_data[samples_count - 1 - _availableA].z;
+    _availableA--;
+  }
+
+  operator bool() const {
+    return continuousMode == true;
+  }
+
+private:
+  bool continuousMode = false;
+  struct bmi2_dev * bmi2;
+  static const size_t samples_count = 8;
+  bmi2_fifo_frame fifoFrame;
+  uint8_t fifoData[samples_count * (6+6)];
+  uint16_t _available = 0;
+  uint16_t _availableG = 0;
+  uint16_t _availableA = 0;
+  struct bmi2_sens_axes_data accel_data[samples_count];
+  struct bmi2_sens_axes_data gyro_data[samples_count];
 };
 
 class BoschSensorClass {
@@ -96,7 +191,7 @@ class BoschSensorClass {
     struct bmm150_dev bmm1;
     uint16_t _int_status;
   private:
-    bool continuousMode;
+    ContinuousMode continuousMode{&bmi2};
 };
 
 extern BoschSensorClass IMU_BMI270_BMM150;

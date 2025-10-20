@@ -87,13 +87,11 @@ int BoschSensorClass::begin(CfgBoshSensor_t cfg) {
 
 
 void BoschSensorClass::setContinuousMode() {
-  bmi2_set_fifo_config(BMI2_FIFO_GYR_EN | BMI2_FIFO_ACC_EN, 1, &bmi2);
-  continuousMode = true;
+  continuousMode.begin();
 }
 
 void BoschSensorClass::oneShotMode() {
-  bmi2_set_fifo_config(BMI2_FIFO_GYR_EN | BMI2_FIFO_ACC_EN, 0, &bmi2);
-  continuousMode = false;
+  continuousMode.end();
 }
 
 // default range is +-4G, so conversion factor is (((1 << 15)/4.0f))
@@ -102,7 +100,14 @@ void BoschSensorClass::oneShotMode() {
 // Accelerometer
 int BoschSensorClass::readAcceleration(float& x, float& y, float& z) {
   struct bmi2_sens_data sensor_data;
-  auto ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
+  int ret = 0;
+
+  if (continuousMode.hasData(BMI270_ACCELEROMETER)) {
+    continuousMode.getAccelerometerData(&sensor_data.acc);
+  } else {
+    ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
+  }
+
   #ifdef TARGET_ARDUINO_NANO33BLE
   x = -sensor_data.acc.y / INT16_to_G;
   y = -sensor_data.acc.x / INT16_to_G;
@@ -116,11 +121,14 @@ int BoschSensorClass::readAcceleration(float& x, float& y, float& z) {
 
 int BoschSensorClass::accelerationAvailable() {
   uint16_t status;
+  if (continuousMode) {
+    return continuousMode.available(BMI270_ACCELEROMETER);
+  }
   bmi2_get_int_status(&status, &bmi2);
   int ret = ((status | _int_status) & BMI2_ACC_DRDY_INT_MASK);
   _int_status = status;
   _int_status &= ~BMI2_ACC_DRDY_INT_MASK;
-  return ret;
+  return ret > 0;
 }
 
 float BoschSensorClass::accelerationSampleRate() {
@@ -136,7 +144,13 @@ float BoschSensorClass::accelerationSampleRate() {
 // Gyroscope
 int BoschSensorClass::readGyroscope(float& x, float& y, float& z) {
   struct bmi2_sens_data sensor_data;
-  auto ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
+  int ret = 0;
+
+  if (continuousMode.hasData(BMI270_GYROSCOPE)) {
+    continuousMode.getGyroscopeData(&sensor_data.gyr);
+  } else {
+    ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
+  }
   #ifdef TARGET_ARDUINO_NANO33BLE
   x = -sensor_data.gyr.y / INT16_to_DPS;
   y = -sensor_data.gyr.x / INT16_to_DPS;
@@ -150,11 +164,14 @@ int BoschSensorClass::readGyroscope(float& x, float& y, float& z) {
 
 int BoschSensorClass::gyroscopeAvailable() {
   uint16_t status;
+  if (continuousMode) {
+    return continuousMode.available(BMI270_GYROSCOPE);
+  }
   bmi2_get_int_status(&status, &bmi2);
   int ret = ((status | _int_status) & BMI2_GYR_DRDY_INT_MASK);
   _int_status = status;
   _int_status &= ~BMI2_GYR_DRDY_INT_MASK;
-  return ret;
+  return ret > 0;
 }
 
 float BoschSensorClass::gyroscopeSampleRate() {
