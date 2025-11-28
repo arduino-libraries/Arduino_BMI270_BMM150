@@ -150,6 +150,17 @@ class BoschSensorClass {
     }
     PinName BMI270_INT1 = NC;
     #endif
+    #ifdef ARDUINO_ARCH_ESP32
+    void onInterrupt(void (*)(void));
+    void setInterruptPin(int irq_pin) {
+      BMI270_INT1 = irq_pin;
+    }
+    #if defined(ARDUINO_ARDUINO_NESSO_N1)
+    int BMI270_INT1 = 3;
+    #else
+    int BMI270_INT1 = -1;
+    #endif
+    #endif
     // Accelerometer
     virtual int readAcceleration(float& x, float& y, float& z); // Results are in G (earth gravity).
     virtual int accelerationAvailable(); // Number of samples in the FIFO.

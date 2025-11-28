@@ -39,6 +39,16 @@ void BoschSensorClass::onInterrupt(mbed::Callback<void(void)> cb)
   irq.rise(mbed::callback(this, &BoschSensorClass::interrupt_handler));
 }
 #endif
+#ifdef ARDUINO_ARCH_ESP32
+void BoschSensorClass::onInterrupt(void (*cb)(void))
+{
+  if (BMI270_INT1 == -1) {
+    return;
+  }
+  pinMode(BMI270_INT1, INPUT_PULLUP);
+  attachInterrupt(BMI270_INT1, cb, FALLING);
+}
+#endif
 int BoschSensorClass::begin(CfgBoshSensor_t cfg) {
 
   _wire->begin();
