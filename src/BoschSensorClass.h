@@ -79,7 +79,7 @@ public:
     if (ret != 0) {
       return 0;
     }
-    _available = min(status, sizeof(fifoData)) / (6 + 6); // 6 bytes per accel sample
+    _available = min((size_t)status, sizeof(fifoData)) / (6 + 6); // 6 bytes per accel sample
     _availableG = _available;
     _availableA = _available;
     ret = bmi2_extract_accel(accel_data, &_available, &fifoFrame, bmi2);
