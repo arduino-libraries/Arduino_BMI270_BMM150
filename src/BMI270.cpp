@@ -374,6 +374,7 @@ static void panic_led_trap(void)
   static int const LED_BUILTIN = 2;
 #endif
 
+#if !defined(ARDUINO_ARDUINO_NESSO_N1)
   pinMode(LED_BUILTIN, OUTPUT);
   while (1)
   {
@@ -382,6 +383,7 @@ static void panic_led_trap(void)
     digitalWrite(LED_BUILTIN, HIGH);
     delay(100);
   }
+#endif
 }
 
 void BoschSensorClass::print_rslt(int8_t rslt)

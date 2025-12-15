@@ -74,9 +74,9 @@ void setup() {
   myIMU.debug(Serial);
   myIMU.onInterrupt(print_data);
 #if defined(ARDUINO_ARDUINO_NESSO_N1)
-  myIMU.begin(BOSCH_ACCEL_ONLY);
+  myIMU.begin(BOSCH_ACCELEROMETER_ONLY);
 #else
-  myIMU.begin(BOSCH_ACCEL_AND_GYRO);
+  myIMU.begin();
 #endif
 
   Serial.print("Accelerometer sample rate = ");
