@@ -193,6 +193,11 @@ class BoschSensorClass {
     Stream* _debug = nullptr;
     #ifdef __MBED__
     mbed::Callback<void(void)> _cb;
+    #else
+  public:
+    void (*_cb)(void) = nullptr;
+  private:
+    void cb_wrapper();
     #endif
     bool _initialized = false;
     int _interrupts = 0;
