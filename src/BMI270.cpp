@@ -10,6 +10,10 @@
 static events::EventQueue queue(10 * EVENTS_EVENT_SIZE);
 #endif
 
+#ifdef ARDUINO_ARCH_ESP32
+#include "FunctionalInterrupt.h"
+#endif
+
 #if defined(ARDUINO_NANO33BLE)
 #define TARGET_ARDUINO_NANO33BLE
 #endif
@@ -37,6 +41,45 @@ void BoschSensorClass::onInterrupt(mbed::Callback<void(void)> cb)
   _cb = cb;
   event_t.start(callback(&queue, &events::EventQueue::dispatch_forever));
   irq.rise(mbed::callback(this, &BoschSensorClass::interrupt_handler));
+}
+#endif
+
+#ifdef ARDUINO_ARCH_ESP32
+static EventGroupHandle_t xHandle = NULL;
+struct bmi_task_data {
+  BoschSensorClass* imu;
+  struct bmi2_dev* bmi2;
+};
+
+void irq_thread(void *pvParameters)
+{
+  bmi_task_data* instance_ptr = static_cast<bmi_task_data*>(pvParameters);
+  uint16_t status;
+  while (1) {
+    xEventGroupWaitBits(xHandle, 1, pdTRUE, pdFALSE, portMAX_DELAY);
+    if (instance_ptr->imu && instance_ptr->imu->_cb) {
+      bmi2_get_int_status(&status, instance_ptr->bmi2);
+      instance_ptr->imu->_cb();
+    }
+  }
+}
+
+void BoschSensorClass::cb_wrapper()
+{
+  xEventGroupSetBits(xHandle, 0xFF);
+}
+
+void BoschSensorClass::onInterrupt(void (*cb)(void))
+{
+  if (BMI270_INT1 == -1) {
+    return;
+  }
+  xHandle = xEventGroupCreate();
+  _cb = cb;
+  static struct bmi_task_data instance = { this, &bmi2 };
+  pinMode(BMI270_INT1, INPUT_PULLUP);
+  xTaskCreate(irq_thread, "bmi_irq_thread", 4096, &instance, 1, NULL);
+  attachInterrupt(BMI270_INT1, std::bind(&BoschSensorClass::cb_wrapper, this), FALLING);
 }
 #endif
 int BoschSensorClass::begin(CfgBoshSensor_t cfg) {
@@ -364,6 +407,7 @@ static void panic_led_trap(void)
   static int const LED_BUILTIN = 2;
 #endif
 
+#if !defined(ARDUINO_ARDUINO_NESSO_N1)
   pinMode(LED_BUILTIN, OUTPUT);
   while (1)
   {
@@ -372,6 +416,7 @@ static void panic_led_trap(void)
     digitalWrite(LED_BUILTIN, HIGH);
     delay(100);
   }
+#endif
 }
 
 void BoschSensorClass::print_rslt(int8_t rslt)

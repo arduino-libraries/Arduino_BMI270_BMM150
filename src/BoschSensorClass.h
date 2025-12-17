@@ -79,7 +79,7 @@ public:
     if (ret != 0) {
       return 0;
     }
-    _available = min(status, sizeof(fifoData)) / (6 + 6); // 6 bytes per accel sample
+    _available = min((size_t)status, sizeof(fifoData)) / (6 + 6); // 6 bytes per accel sample
     _availableG = _available;
     _availableA = _available;
     ret = bmi2_extract_accel(accel_data, &_available, &fifoFrame, bmi2);
@@ -150,6 +150,17 @@ class BoschSensorClass {
     }
     PinName BMI270_INT1 = NC;
     #endif
+    #ifdef ARDUINO_ARCH_ESP32
+    void onInterrupt(void (*)(void));
+    void setInterruptPin(int irq_pin) {
+      BMI270_INT1 = irq_pin;
+    }
+    #if defined(ARDUINO_ARDUINO_NESSO_N1)
+    int BMI270_INT1 = 3;
+    #else
+    int BMI270_INT1 = -1;
+    #endif
+    #endif
     // Accelerometer
     virtual int readAcceleration(float& x, float& y, float& z); // Results are in G (earth gravity).
     virtual int accelerationAvailable(); // Number of samples in the FIFO.
@@ -182,6 +193,11 @@ class BoschSensorClass {
     Stream* _debug = nullptr;
     #ifdef __MBED__
     mbed::Callback<void(void)> _cb;
+    #else
+  public:
+    void (*_cb)(void) = nullptr;
+  private:
+    void cb_wrapper();
     #endif
     bool _initialized = false;
     int _interrupts = 0;

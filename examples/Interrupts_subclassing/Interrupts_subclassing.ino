@@ -14,7 +14,11 @@ class MyBoschSensor: public BoschSensorClass {
       struct bmi2_int_pin_config int_pin_cfg;
       int_pin_cfg.pin_type = BMI2_INT1;
       int_pin_cfg.int_latch = BMI2_INT_NON_LATCH;
+    #if defined(ARDUINO_ARDUINO_NESSO_N1)
+      int_pin_cfg.pin_cfg[0].lvl = BMI2_INT_ACTIVE_LOW;
+    #else
       int_pin_cfg.pin_cfg[0].lvl = BMI2_INT_ACTIVE_HIGH;
+    #endif
       int_pin_cfg.pin_cfg[0].od = BMI2_INT_PUSH_PULL;
       int_pin_cfg.pin_cfg[0].output_en = BMI2_INT_OUTPUT_ENABLE;
       int_pin_cfg.pin_cfg[0].input_en = BMI2_INT_INPUT_DISABLE;
@@ -52,7 +56,11 @@ class MyBoschSensor: public BoschSensorClass {
     }
 };
 
+#if defined(ARDUINO_ARDUINO_NESSO_N1)
+MyBoschSensor myIMU(Wire);
+#else
 MyBoschSensor myIMU(Wire1);
+#endif
 
 void print_data() {
   // we can also read accelerometer / gyro data here!
@@ -65,7 +73,11 @@ void setup() {
   while (!Serial);
   myIMU.debug(Serial);
   myIMU.onInterrupt(print_data);
+#if defined(ARDUINO_ARDUINO_NESSO_N1)
+  myIMU.begin(BOSCH_ACCELEROMETER_ONLY);
+#else
   myIMU.begin();
+#endif
 
   Serial.print("Accelerometer sample rate = ");
   Serial.println(myIMU.accelerationSampleRate());
