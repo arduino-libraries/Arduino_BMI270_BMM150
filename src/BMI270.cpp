@@ -142,6 +142,21 @@ void BoschSensorClass::oneShotMode() {
   continuousMode.end();
 }
 
+// default value is 1 (aps_on). power saving may prevent high odr setting to work properly
+bool BoschSensorClass::setAdvPowerSaveMode(uint8_t enable)
+{
+  int8_t rslt = bmi2_set_adv_power_save(enable ? BMI2_ENABLE : BMI2_DISABLE, &bmi2);
+  return (rslt == BMI2_OK);
+}
+
+uint8_t BoschSensorClass::getAdvPowerSaveMode()
+{
+  uint8_t status = 0;
+  if(bmi2_get_adv_power_save(&status, &bmi2) == BMI2_OK) {
+    return status;
+  }
+  return 0;
+}
 // default range is +-4G, so conversion factor is (((1 << 15)/4.0f))
 #define INT16_to_G   (8192.0f)
 
