@@ -124,7 +124,7 @@ int BoschSensorClass::begin(CfgBoshSensor_t cfg) {
     result |= bmm150_init(&bmm1);
     print_rslt(result);
 
-    result = configure_sensor(&bmm1);
+    result |= configure_sensor(&bmm1);
     print_rslt(result);
   }
 
