@@ -389,7 +389,7 @@ int8_t BoschSensorClass::bmi2_i2c_write(uint8_t reg_addr, const uint8_t *reg_dat
   return 0;
 }
 
-void BoschSensorClass::bmi2_delay_us(uint32_t period, void *intf_ptr)
+void BoschSensorClass::bmi2_delay_us(uint32_t period, void * /* intf_ptr */)
 {
   delayMicroseconds(period);
 }
