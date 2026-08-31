@@ -135,7 +135,8 @@ class BoschSensorClass {
 
     void setContinuousMode();
     void oneShotMode();
-
+    bool setAdvancedPowerSaveMode(uint8_t enable);
+    uint8_t getAdvancedPowerSaveMode();
     int begin(CfgBoshSensor_t cfg = BOSCH_ACCEL_AND_MAGN);
     void end();
 
