@@ -157,8 +157,8 @@ int BoschSensorClass::readAcceleration(float& x, float& y, float& z) {
   }
 
   #ifdef TARGET_ARDUINO_NANO33BLE
-  x = -sensor_data.acc.y / INT16_to_G;
-  y = -sensor_data.acc.x / INT16_to_G;
+  x = sensor_data.acc.x / INT16_to_G;
+  y = sensor_data.acc.y / INT16_to_G;
   #else
   x = sensor_data.acc.x / INT16_to_G;
   y = sensor_data.acc.y / INT16_to_G;
@@ -200,8 +200,8 @@ int BoschSensorClass::readGyroscope(float& x, float& y, float& z) {
     ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
   }
   #ifdef TARGET_ARDUINO_NANO33BLE
-  x = -sensor_data.gyr.y / INT16_to_DPS;
-  y = -sensor_data.gyr.x / INT16_to_DPS;
+  x = sensor_data.gyr.x / INT16_to_DPS;
+  y = sensor_data.gyr.y / INT16_to_DPS;
   #else
   x = sensor_data.gyr.x / INT16_to_DPS;
   y = sensor_data.gyr.y / INT16_to_DPS;
