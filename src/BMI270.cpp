@@ -229,6 +229,39 @@ float BoschSensorClass::gyroscopeSampleRate() {
   return (1 << sens_cfg.cfg.gyr.odr) * 0.39;
 }
 
+// Read both Accel and Gyro in one bmi2_get_sensor_data call
+int BoschSensorClass::readAccelerationGyroscope(float& ax, float& ay, float& az, float& gx, float& gy, float& gz) {
+  struct bmi2_sens_data sensor_data;
+  int ret = 0;
+
+  if (continuousMode.hasData(BMI270_ACCELEROMETER) && continuousMode.hasData(BMI270_GYROSCOPE)) {
+    continuousMode.getAccelerometerData(&sensor_data.acc);
+    continuousMode.getGyroscopeData(&sensor_data.gyr);
+  } else {
+    ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
+  }
+
+  #ifdef TARGET_ARDUINO_NANO33BLE
+  ax = -sensor_data.acc.y / INT16_to_G;
+  ay = -sensor_data.acc.x / INT16_to_G;
+  #else
+  ax = sensor_data.acc.x / INT16_to_G;
+  ay = sensor_data.acc.y / INT16_to_G;
+  #endif
+  az = sensor_data.acc.z / INT16_to_G;
+
+  #ifdef TARGET_ARDUINO_NANO33BLE
+  gx = -sensor_data.gyr.y / INT16_to_DPS;
+  gy = -sensor_data.gyr.x / INT16_to_DPS;
+  #else
+  gx = sensor_data.gyr.x / INT16_to_DPS;
+  gy = sensor_data.gyr.y / INT16_to_DPS;
+  #endif
+  gz = sensor_data.gyr.z / INT16_to_DPS;
+
+  return (ret == 0);
+}
+
 // Magnetometer
 int BoschSensorClass::readMagneticField(float& x, float& y, float& z) {
   struct bmm150_mag_data mag_data;

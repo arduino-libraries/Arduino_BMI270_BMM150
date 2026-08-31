@@ -171,6 +171,9 @@ class BoschSensorClass {
     virtual int gyroscopeAvailable(); // Number of samples in the FIFO.
     virtual float gyroscopeSampleRate(); // Sampling rate of the sensor.
 
+    // Accelerometer & Gyroscope
+    virtual int readAccelerationGyroscope(float& ax, float& ay, float& az, float& gx, float& gy, float& gz);
+
     // Magnetometer
     virtual int readMagneticField(float& x, float& y, float& z); // Results are in uT (micro Tesla).
     virtual int magneticFieldAvailable(); // Number of samples in the FIFO.
